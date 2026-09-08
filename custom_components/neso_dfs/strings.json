@@ -7,6 +7,13 @@
         "data": {
           "postcode": "Postcode"
         }
+      },
+      "bidder": {
+        "title": "Track a bidder (optional)",
+        "description": "Pick a registered DFS participant bidding in zone Z{zone} to follow, or leave it as None. Confirmed results are reported separately from the historical accept rate, which only applies while an auction is unsettled. You can change this later.",
+        "data": {
+          "participant": "Bidder to report on"
+        }
       }
     },
     "error": {

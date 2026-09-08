@@ -23,9 +23,13 @@ STEP_USER_SCHEMA = vol.Schema({vol.Optional(CONF_POSTCODE, default=""): str})
 
 
 class DfsConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Ask for a postcode (or fall back to the Home Assistant location)."""
+    """Resolve the zone, then offer a bidder to follow."""
 
     VERSION = 1
+
+    def __init__(self) -> None:
+        self._zone: int | None = None
+        self._postcode: str | None = None
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         errors: dict[str, str] = {}
@@ -44,15 +48,34 @@ class DfsConfigFlow(ConfigFlow, domain=DOMAIN):
                 else:
                     await self.async_set_unique_id(f"zone_{zone.number}")
                     self._abort_if_unique_id_configured()
-                    return self.async_create_entry(
-                        title=f"DFS Zone {zone.number}",
-                        data={
-                            CONF_ZONE: zone.number,
-                            CONF_POSTCODE: location.postcode,
-                        },
-                    )
+                    self._zone = zone.number
+                    self._postcode = location.postcode
+                    return await self.async_step_bidder()
 
         return self.async_show_form(step_id="user", data_schema=STEP_USER_SCHEMA, errors=errors)
+
+    async def async_step_bidder(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Offer the participants that actually bid into this zone. Skippable."""
+        if user_input is not None:
+            participant = (user_input.get(CONF_PARTICIPANT) or "").strip()
+            return self.async_create_entry(
+                title=f"DFS Zone {self._zone}",
+                data={CONF_ZONE: self._zone, CONF_POSTCODE: self._postcode},
+                options={CONF_PARTICIPANT: participant} if participant else {},
+            )
+
+        schema = vol.Schema(
+            {
+                vol.Optional(CONF_PARTICIPANT, default=""): await _participant_selector(
+                    self.hass, self._zone
+                )
+            }
+        )
+        return self.async_show_form(
+            step_id="bidder",
+            data_schema=schema,
+            description_placeholders={"zone": str(self._zone)},
+        )
 
     @staticmethod
     @callback
@@ -67,35 +90,35 @@ class DfsOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(data=user_input)
 
-        zone = self.config_entry.data[CONF_ZONE]
-        try:
-            participants = await self.hass.async_add_executor_job(fetch_participants, zone)
-        except NesoError:
-            participants = []
-
         current = self.config_entry.options.get(CONF_PARTICIPANT, "")
-        if current and current not in participants:
-            participants.append(current)
-
-        options = [SelectOptionDict(value="", label="None")]
-        options += [SelectOptionDict(value=name, label=name) for name in participants]
-
         schema = vol.Schema(
             {
                 vol.Optional(
                     CONF_LIVE_ONLY,
                     default=self.config_entry.options.get(CONF_LIVE_ONLY, False),
                 ): bool,
-                vol.Optional(CONF_PARTICIPANT, default=current): SelectSelector(
-                    SelectSelectorConfig(
-                        options=options,
-                        mode=SelectSelectorMode.DROPDOWN,
-                        custom_value=True,
-                    )
+                vol.Optional(CONF_PARTICIPANT, default=current): await _participant_selector(
+                    self.hass, self.config_entry.data[CONF_ZONE], current
                 ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)
+
+
+async def _participant_selector(hass, zone: int, current: str = "") -> SelectSelector:
+    """Dropdown of participants that have bid into this zone, plus a 'None' entry."""
+    try:
+        participants = await hass.async_add_executor_job(fetch_participants, zone)
+    except NesoError:
+        participants = []
+    if current and current not in participants:
+        participants.append(current)
+
+    options = [SelectOptionDict(value="", label="None")]
+    options += [SelectOptionDict(value=name, label=name) for name in participants]
+    return SelectSelector(
+        SelectSelectorConfig(options=options, mode=SelectSelectorMode.DROPDOWN, custom_value=True)
+    )
 
 
 def _lookup_zone(postcode: str, latitude: float, longitude: float):
