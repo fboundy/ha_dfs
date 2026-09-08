@@ -182,14 +182,18 @@ class ParticipantHistory:
 
 
 def fetch_participants(zone: int) -> list[str]:
-    """Every participant that has bid into this zone, busiest first."""
+    """Every participant that has bid into this zone, sorted alphabetically.
+
+    Sorted in Python rather than SQL so the ordering ignores case - NESO mixes
+    "OCTOPUS ENERGY LIMITED" with "Shuffle Energy Limited".
+    """
     sql = (
-        f'SELECT "Registered DFS Participant" AS participant, COUNT(*) AS bids '
-        f'FROM "{UTILISATION_RESOURCE}" WHERE "Zone" = {_sql_literal(str(int(zone)))} '
-        f'GROUP BY "Registered DFS Participant" ORDER BY bids DESC'
+        f'SELECT DISTINCT "Registered DFS Participant" AS participant '
+        f'FROM "{UTILISATION_RESOURCE}" WHERE "Zone" = {_sql_literal(str(int(zone)))}'
     )
     records = datastore_sql(sql)
-    return [str(record["participant"]).strip() for record in records if record.get("participant")]
+    names = {str(record["participant"]).strip() for record in records if record.get("participant")}
+    return sorted(names, key=str.casefold)
 
 
 def fetch_participant_history(

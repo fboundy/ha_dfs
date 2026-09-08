@@ -112,7 +112,7 @@ async def _participant_selector(hass, zone: int, current: str = "") -> SelectSel
     except NesoError:
         participants = []
     if current and current not in participants:
-        participants.append(current)
+        participants = sorted([*participants, current], key=str.casefold)
 
     options = [SelectOptionDict(value="", label="None")]
     options += [SelectOptionDict(value=name, label=name) for name in participants]
