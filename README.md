@@ -56,7 +56,7 @@ zone sensor for a zone 6 setup is `sensor.neso_dfs_zone_6_dfs_zone`.
 | Next DFS event start / end | Timestamps for the next event |
 | Next DFS event requirement | Peak MW requirement published for it |
 | Upcoming DFS events | Count, with every upcoming event in its attributes |
-| DFS accepted volume | MW accepted in your zone for the current or next window |
+| DFS accepted volume | MW accepted in your zone for the current or next window, with every bid listed in its attributes |
 | DFS clearing price | Highest accepted price in your zone, £/MWh |
 
 Every event entity carries the full detail in its attributes: event ID, direction (Upwards or
@@ -64,6 +64,20 @@ Downwards), live or test, the bid deadline, your zone's MW cap and which zones a
 
 An event publishes a per-zone MW cap. **A cap of `0`, or a zone missing from the list, means that
 zone is not being procured** — the event is running, but not where you are.
+
+The accepted volume sensor carries the full auction result for the window in `accepted_bids` and
+`rejected_bids`, each a list of `{participant, unit_id, mw, price}` ordered by price. NESO publishes
+one bid per participant per zone, so this is a handful of rows, not thousands. Reading the two lists
+together shows the merit order directly — every rejected bid sits above the clearing price:
+
+```yaml
+accepted_bids:
+  - {participant: Shuffle Energy Limited, unit_id: SHUF-06-Z6, mw: 0.1, price: 175.0}
+  - {participant: INFINIS LIMITED,        unit_id: INFI-06-Z6, mw: 2.4, price: 177.0}
+  - {participant: EQUIWATT LIMITED,       unit_id: EQUI-06-Z6, mw: 1.2, price: 203.0}   # marginal
+rejected_bids:
+  - {participant: AXLE ENERGY LIMITED,    unit_id: AXLE-01-Z6, mw: 2.7, price: 319.3}
+```
 
 ### Tracking a participant
 

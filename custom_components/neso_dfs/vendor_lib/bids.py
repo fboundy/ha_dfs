@@ -54,6 +54,10 @@ class BidWindow:
         return [bid for bid in self.bids if bid.accepted]
 
     @property
+    def rejected_bids(self) -> list[Bid]:
+        return [bid for bid in self.bids if not bid.accepted]
+
+    @property
     def accepted_mw(self) -> float:
         return round(sum(bid.mw for bid in self.accepted_bids), 3)
 

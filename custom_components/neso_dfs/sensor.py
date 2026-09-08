@@ -41,6 +41,19 @@ async def async_setup_entry(
         )
 
 
+def _bid_rows(bids) -> list[dict]:
+    """One row per bid: NESO publishes a single bid per participant per window."""
+    return [
+        {
+            "participant": bid.participant,
+            "unit_id": bid.unit_id,
+            "mw": bid.mw,
+            "price": bid.price,
+        }
+        for bid in sorted(bids, key=lambda b: (b.price is None, b.price))
+    ]
+
+
 def _bid_window_attributes(window, zone: int) -> dict:
     if window is None:
         return {ATTR_ZONE: zone}
@@ -157,7 +170,12 @@ class DfsAcceptedVolumeSensor(DfsEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        return _bid_window_attributes(self.coordinator.bid_window, self.zone)
+        window = self.coordinator.bid_window
+        attributes = _bid_window_attributes(window, self.zone)
+        if window is not None:
+            attributes["accepted_bids"] = _bid_rows(window.accepted_bids)
+            attributes["rejected_bids"] = _bid_rows(window.rejected_bids)
+        return attributes
 
 
 class DfsClearingPriceSensor(DfsEntity, SensorEntity):

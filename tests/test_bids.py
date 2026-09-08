@@ -48,6 +48,25 @@ def test_single_window_aggregates():
     assert window.lowest_accepted_price == 175.0
 
 
+def test_accepted_and_rejected_partition_the_window():
+    window = group_bids(
+        [
+            row(**{"Utilisation Price GBP per MWh": "175"}),
+            row(**{"Registered DFS Participant": "INFINIS LIMITED", "DFS Unit ID": "INFI-06-Z6",
+                   "Utilisation Price GBP per MWh": "203"}),
+            row(**{"Registered DFS Participant": "OCTOPUS ENERGY LIMITED", "DFS Unit ID": "OCTO-06-Z6",
+                   "Utilisation Price GBP per MWh": "319.3", "Status": "Rejected"}),
+        ]
+    )[0]
+    assert len(window.accepted_bids) == 2
+    assert len(window.rejected_bids) == 1
+    assert len(window.accepted_bids) + len(window.rejected_bids) == len(window.bids)
+    assert window.rejected_bids[0].participant == "OCTOPUS ENERGY LIMITED"
+    # The marginal accepted bid sets the clearing price; rejections sit above it.
+    assert window.clearing_price == 203.0
+    assert window.rejected_bids[0].price > window.clearing_price
+
+
 def test_accepted_by_participant_is_sorted_by_volume():
     windows = group_bids(
         [
