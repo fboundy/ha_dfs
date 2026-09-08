@@ -114,6 +114,7 @@ a bid that has not settled yet never reads as a rejection:
 
 | Entity | Description |
 | --- | --- |
+| `sensor.dfs_bidder` | The participant being tracked |
 | `binary_sensor.dfs_bidder_accepted` | Confirmed accepted for the current/next event. `unknown` until the auction settles |
 | `sensor.dfs_bidder_status` | `accepted`, `rejected`, `no_bid`, or `pending` while unsettled |
 | `sensor.dfs_bidder_accepted_volume` | Confirmed MW accepted |

@@ -83,6 +83,9 @@
       },
       "participant_accept_rate": {
         "name": "Bidder accept rate"
+      },
+      "bidder": {
+        "name": "Bidder"
       }
     }
   }

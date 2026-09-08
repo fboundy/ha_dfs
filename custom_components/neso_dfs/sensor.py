@@ -33,6 +33,7 @@ async def async_setup_entry(
     if coordinator.participant:
         async_add_entities(
             [
+                DfsBidderSensor(coordinator),
                 DfsParticipantStatusSensor(coordinator),
                 DfsParticipantAcceptedVolumeSensor(coordinator),
                 DfsParticipantAcceptRateSensor(coordinator),
@@ -179,6 +180,24 @@ class DfsClearingPriceSensor(DfsEntity, SensorEntity):
     @property
     def extra_state_attributes(self) -> dict:
         return _bid_window_attributes(self.coordinator.bid_window, self.zone)
+
+
+class DfsBidderSensor(DfsEntity, SensorEntity):
+    """Names the registered DFS participant the bidder entities are reporting on."""
+
+    _attr_translation_key = "bidder"
+    _attr_icon = "mdi:account-hard-hat"
+
+    def __init__(self, coordinator) -> None:
+        super().__init__(coordinator, "bidder")
+
+    @property
+    def native_value(self) -> str | None:
+        return self.coordinator.participant
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {ATTR_ZONE: self.zone}
 
 
 class DfsParticipantStatusSensor(DfsEntity, SensorEntity):
