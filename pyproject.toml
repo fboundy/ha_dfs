@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "neso-dfs"
+version = "0.1.0"
+description = "Find your NESO Demand Flexibility Service zone and upcoming DFS events"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+neso-dfs = "neso_dfs.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["neso_dfs*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# pytest-homeassistant-custom-component imports homeassistant, which needs fcntl (Linux only).
+# These tests are pure-library; drop this flag when running HA-dependent tests under Linux/WSL.
+addopts = "-p no:homeassistant"

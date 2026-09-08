@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "NESO Demand Flexibility Service",
+        "description": "Enter a UK postcode to find your DFS zone. Leave it blank to use the Home Assistant location.",
+        "data": {
+          "postcode": "Postcode"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach NESO or the postcode lookup service.",
+      "outside_gb": "That location is not inside any DFS zone. The service covers Great Britain only."
+    },
+    "abort": {
+      "already_configured": "This DFS zone is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "live_only": "Ignore test events"
+        }
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "event_active": { "name": "DFS event active" },
+      "event_today": { "name": "DFS event today" }
+    },
+    "sensor": {
+      "zone": { "name": "DFS zone" },
+      "next_event_start": { "name": "Next DFS event start" },
+      "next_event_end": { "name": "Next DFS event end" },
+      "next_event_requirement": { "name": "Next DFS event requirement" },
+      "upcoming_events": { "name": "Upcoming DFS events" }
+    }
+  }
+}

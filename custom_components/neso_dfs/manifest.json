@@ -1,0 +1,12 @@
+{
+  "domain": "neso_dfs",
+  "name": "NESO Demand Flexibility Service",
+  "codeowners": ["@fboundy"],
+  "config_flow": true,
+  "documentation": "https://github.com/fboundy/ha_dfs",
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/fboundy/ha_dfs/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}
