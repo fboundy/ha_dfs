@@ -6,11 +6,18 @@ from typing import Any
 
 import voluptuous as vol
 
-from homeassistant.config_entries import ConfigFlow, ConfigFlowResult, OptionsFlow, ConfigEntry
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.core import callback
+from homeassistant.helpers.selector import (
+    SelectOptionDict,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
-from .const import CONF_LIVE_ONLY, CONF_POSTCODE, CONF_ZONE, DOMAIN
+from .const import CONF_LIVE_ONLY, CONF_PARTICIPANT, CONF_POSTCODE, CONF_ZONE, DOMAIN
 from .vendor_lib import NesoError, find_zone
+from .vendor_lib.bids import fetch_participants
 
 STEP_USER_SCHEMA = vol.Schema({vol.Optional(CONF_POSTCODE, default=""): str})
 
@@ -54,18 +61,38 @@ class DfsConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class DfsOptionsFlow(OptionsFlow):
-    """Lets the user hide test events."""
+    """Lets the user hide test events and follow one bidder's results."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(data=user_input)
+
+        zone = self.config_entry.data[CONF_ZONE]
+        try:
+            participants = await self.hass.async_add_executor_job(fetch_participants, zone)
+        except NesoError:
+            participants = []
+
+        current = self.config_entry.options.get(CONF_PARTICIPANT, "")
+        if current and current not in participants:
+            participants.append(current)
+
+        options = [SelectOptionDict(value="", label="None")]
+        options += [SelectOptionDict(value=name, label=name) for name in participants]
 
         schema = vol.Schema(
             {
                 vol.Optional(
                     CONF_LIVE_ONLY,
                     default=self.config_entry.options.get(CONF_LIVE_ONLY, False),
-                ): bool
+                ): bool,
+                vol.Optional(CONF_PARTICIPANT, default=current): SelectSelector(
+                    SelectSelectorConfig(
+                        options=options,
+                        mode=SelectSelectorMode.DROPDOWN,
+                        custom_value=True,
+                    )
+                ),
             }
         )
         return self.async_show_form(step_id="init", data_schema=schema)

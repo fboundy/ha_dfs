@@ -12,7 +12,7 @@ import shutil
 import sys
 from pathlib import Path
 
-MODULES = ("__init__.py", "api.py", "events.py", "zones.py")
+MODULES = ("__init__.py", "api.py", "bids.py", "events.py", "zones.py")
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_DIR = REPO_ROOT / "neso_dfs"

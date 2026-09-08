@@ -10,7 +10,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import DfsConfigEntry
-from .const import ATTR_ZONE
+from .const import ATTR_ZONE, STATUS_ACCEPTED
 from .entity import DfsEntity, event_attributes
 
 
@@ -19,6 +19,38 @@ async def async_setup_entry(
 ) -> None:
     coordinator = entry.runtime_data
     async_add_entities([DfsActiveBinarySensor(coordinator), DfsEventTodayBinarySensor(coordinator)])
+
+    if coordinator.participant:
+        async_add_entities([DfsParticipantAcceptedBinarySensor(coordinator)])
+
+
+class DfsParticipantAcceptedBinarySensor(DfsEntity, BinarySensorEntity):
+    """On only when the tracked bidder is confirmed accepted for the current or next event.
+
+    Unknown while the auction is unsettled, so a pending bid never reads as a rejection.
+    """
+
+    _attr_translation_key = "participant_accepted"
+    _attr_icon = "mdi:gavel"
+
+    def __init__(self, coordinator) -> None:
+        super().__init__(coordinator, "participant_accepted")
+
+    @property
+    def is_on(self) -> bool | None:
+        if not self.coordinator.results_published:
+            return None
+        return self.coordinator.participant_status == STATUS_ACCEPTED
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {
+            ATTR_ZONE: self.zone,
+            "participant": self.coordinator.participant,
+            "status": self.coordinator.participant_status,
+            "results_published": self.coordinator.results_published,
+            "accepted_mw": self.coordinator.participant_accepted_mw,
+        }
 
 
 class DfsActiveBinarySensor(DfsEntity, BinarySensorEntity):
@@ -61,12 +93,12 @@ class DfsEventTodayBinarySensor(DfsEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         today = dt_util.now().date()
-        return any(event.delivery_date == today for event in self.coordinator.data or [])
+        return any(event.delivery_date == today for event in self.coordinator.events)
 
     @property
     def extra_state_attributes(self) -> dict:
         today = dt_util.now().date()
-        events = [event for event in self.coordinator.data or [] if event.delivery_date == today]
+        events = [event for event in self.coordinator.events if event.delivery_date == today]
         return {
             ATTR_ZONE: self.zone,
             "event_count": len(events),

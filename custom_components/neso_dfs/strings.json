@@ -21,22 +21,62 @@
     "step": {
       "init": {
         "data": {
-          "live_only": "Ignore test events"
-        }
+          "live_only": "Ignore test events",
+          "participant": "Bidder to report on"
+        },
+        "description": "Pick a registered DFS participant to track. Confirmed results are reported separately from the historical accept rate, which only applies while an auction is unsettled."
       }
     }
   },
   "entity": {
     "binary_sensor": {
-      "event_active": { "name": "DFS event active" },
-      "event_today": { "name": "DFS event today" }
+      "event_active": {
+        "name": "DFS event active"
+      },
+      "event_today": {
+        "name": "DFS event today"
+      },
+      "participant_accepted": {
+        "name": "Bidder accepted"
+      }
     },
     "sensor": {
-      "zone": { "name": "DFS zone" },
-      "next_event_start": { "name": "Next DFS event start" },
-      "next_event_end": { "name": "Next DFS event end" },
-      "next_event_requirement": { "name": "Next DFS event requirement" },
-      "upcoming_events": { "name": "Upcoming DFS events" }
+      "zone": {
+        "name": "DFS zone"
+      },
+      "next_event_start": {
+        "name": "Next DFS event start"
+      },
+      "next_event_end": {
+        "name": "Next DFS event end"
+      },
+      "next_event_requirement": {
+        "name": "Next DFS event requirement"
+      },
+      "upcoming_events": {
+        "name": "Upcoming DFS events"
+      },
+      "accepted_volume": {
+        "name": "DFS accepted volume"
+      },
+      "clearing_price": {
+        "name": "DFS clearing price"
+      },
+      "participant_status": {
+        "name": "Bidder status",
+        "state": {
+          "accepted": "Accepted",
+          "rejected": "Rejected",
+          "no_bid": "No bid",
+          "pending": "Pending"
+        }
+      },
+      "participant_accepted_volume": {
+        "name": "Bidder accepted volume"
+      },
+      "participant_accept_rate": {
+        "name": "Bidder accept rate"
+      }
     }
   }
 }

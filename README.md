@@ -65,6 +65,63 @@ event, which is what `Your zone` and `--only-my-zone` key off.
 Events are published shortly before the day of delivery, so an empty list is normal — outside a
 tight system margin there simply are no DFS events scheduled.
 
+## Who won the bidding?
+
+NESO publishes every bid shortly after the auction closes — usually hours before delivery starts —
+so the accepted volume and clearing price for your zone are known in advance of the event.
+
+```console
+$ neso-dfs bids --zone 6
+DFS zone: Z6
+
+date        window          accepted  rejected   clearing
+2026-09-08  17:00-17:30          1.8       0.0     175.00
+2026-09-08  18:00-18:30         17.4       0.0     185.00
+2026-09-08  18:30-19:00         15.4       0.0     203.00
+
+Accepted providers in the 21:30-22:00 window:
+     1.30 MW  INFINIS LIMITED
+     0.20 MW  HILDEBRAND TECHNOLOGY LIMITED
+```
+
+`clearing` is the highest accepted price in that window — what the marginal accepted bid was paid.
+
+## Home Assistant integration
+
+`custom_components/neso_dfs/` is a config-flow integration built on the same library. Install it
+through HACS as a custom repository (category *Integration*), or run `./scripts/deploy.sh` to copy
+it to a Home Assistant host over SSH.
+
+Leave the postcode blank during setup and it uses the coordinates Home Assistant already holds for
+your home.
+
+| Entity | Description |
+| --- | --- |
+| `sensor.dfs_zone` | Your DFS zone (1–12) |
+| `binary_sensor.dfs_event_active` | On while a window covering your zone is being delivered |
+| `binary_sensor.dfs_event_today` | On when an event is scheduled today |
+| `sensor.next_dfs_event_start` / `_end` | Timestamps for the next event |
+| `sensor.next_dfs_event_requirement` | Peak MW requirement |
+| `sensor.upcoming_dfs_events` | Count, with every upcoming event in its attributes |
+| `sensor.dfs_accepted_volume` | MW accepted in your zone for the current or next window |
+| `sensor.dfs_clearing_price` | Highest accepted price, £/MWh |
+
+### Tracking a bidder
+
+The options flow lets you pick a registered DFS participant — your own aggregator, for instance —
+and adds three more entities. **Confirmed results and historical likelihood are kept separate**, so
+a bid that has not settled yet never reads as a rejection:
+
+| Entity | Description |
+| --- | --- |
+| `binary_sensor.dfs_bidder_accepted` | Confirmed accepted for the current/next event. `unknown` until the auction settles |
+| `sensor.dfs_bidder_status` | `accepted`, `rejected`, `no_bid`, or `pending` while unsettled |
+| `sensor.dfs_bidder_accepted_volume` | Confirmed MW accepted |
+| `sensor.dfs_bidder_accept_rate` | Share of this bidder's past bids accepted in your zone — the prior, only meaningful while a bid is `pending` |
+
+Use `dfs_bidder_status` to drive automations: act on `accepted`, and treat `pending` as "not known
+yet" rather than a no.
+
 ## Python API
 
 ```python
@@ -87,6 +144,7 @@ NESO's local clock strings kept alongside as `start_local` / `end_local`.
 | --- | --- |
 | Zone boundaries | NESO ["DFS 12 Zones GeoJson Map"](https://www.neso.energy/document/376656/download) |
 | Events | NESO Data Portal, [DFS Service Requirement](https://www.neso.energy/data-portal/demand-flexibility/dfs_service_requirement) (CKAN resource `3635fd80-49d7-4d02-964d-cc8c08d50302`) |
+| Bids | NESO Data Portal, [DFS Utilisation Report](https://www.neso.energy/data-portal/demand-flexibility/dfs_utilisation_report) (CKAN resource `3ebf77d7-05df-466e-a023-dc45a90efeea`) |
 | Postcode geocoding | [postcodes.io](https://postcodes.io) |
 
 Zone boundaries are cached for 30 days under `~/.cache/neso_dfs` (`%LOCALAPPDATA%\neso_dfs` on

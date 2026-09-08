@@ -5,7 +5,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 SOURCE_DIR = REPO_ROOT / "neso_dfs"
 VENDOR_DIR = REPO_ROOT / "custom_components" / "neso_dfs" / "vendor_lib"
-MODULES = ("__init__.py", "api.py", "events.py", "zones.py")
+MODULES = ("__init__.py", "api.py", "bids.py", "events.py", "zones.py")
 
 
 @pytest.mark.parametrize("module", MODULES)

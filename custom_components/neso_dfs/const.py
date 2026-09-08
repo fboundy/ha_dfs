@@ -7,6 +7,7 @@ DOMAIN = "neso_dfs"
 CONF_POSTCODE = "postcode"
 CONF_ZONE = "zone"
 CONF_LIVE_ONLY = "live_only"
+CONF_PARTICIPANT = "participant"
 
 DEFAULT_SCAN_INTERVAL = timedelta(minutes=15)
 
@@ -25,3 +26,9 @@ ATTR_ZONES_IN_SCOPE = "zones_in_scope"
 ATTR_BIDS_CLOSE = "bids_close"
 ATTR_PARTICIPANTS = "participants"
 ATTR_ZONE = "zone"
+
+STATUS_ACCEPTED = "accepted"
+STATUS_REJECTED = "rejected"
+STATUS_NO_BID = "no_bid"
+STATUS_PENDING = "pending"
+PARTICIPANT_STATUSES = [STATUS_ACCEPTED, STATUS_REJECTED, STATUS_NO_BID, STATUS_PENDING]

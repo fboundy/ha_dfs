@@ -1,16 +1,21 @@
 """Tools for NESO's Demand Flexibility Service (DFS): zone lookup and event data."""
 
 from .api import NesoError
+from .bids import Bid, BidWindow, current_or_next_window, fetch_bid_windows
 from .events import DfsEvent, ServiceWindow, fetch_events, fetch_service_windows, parse_zonal_caps
 from .zones import Location, Zone, ZoneMap, find_zone, resolve_location
 
 __all__ = [
+    "Bid",
+    "BidWindow",
     "DfsEvent",
     "Location",
     "NesoError",
     "ServiceWindow",
     "Zone",
     "ZoneMap",
+    "current_or_next_window",
+    "fetch_bid_windows",
     "fetch_events",
     "fetch_service_windows",
     "find_zone",

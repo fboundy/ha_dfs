@@ -9,6 +9,7 @@ from dataclasses import asdict
 from datetime import datetime, timezone
 
 from .api import NesoError
+from .bids import fetch_bid_windows
 from .events import DfsEvent, fetch_events
 from .zones import Location, Zone, find_zone
 
@@ -164,6 +165,64 @@ def command_events(args: argparse.Namespace) -> int:
     return 0
 
 
+def command_bids(args: argparse.Namespace) -> int:
+    zone, location = _resolve_zone(args)
+    if zone is None:
+        print("error: provide a postcode, coordinates or --zone", file=sys.stderr)
+        return 2
+
+    windows = fetch_bid_windows(zone.number)
+
+    if args.json:
+        print(
+            json.dumps(
+                {
+                    "zone": zone.number,
+                    "windows": [
+                        {
+                            "event_id": window.event_id,
+                            "delivery_date": window.delivery_date.isoformat(),
+                            "start_local": window.start_local,
+                            "end_local": window.end_local,
+                            "start_utc": window.start.isoformat(),
+                            "accepted_mw": window.accepted_mw,
+                            "rejected_mw": window.rejected_mw,
+                            "clearing_price": window.clearing_price,
+                            "lowest_accepted_price": window.lowest_accepted_price,
+                            "accepted_by_participant": window.accepted_by_participant,
+                        }
+                        for window in windows
+                    ],
+                },
+                indent=2,
+            )
+        )
+        return 0
+
+    if location is not None:
+        print(_describe_location(location))
+    print(f"DFS zone: Z{zone.number}\n")
+
+    if not windows:
+        print("No bid results published for this zone yet.")
+        return 0
+
+    print(f"{'date':<12}{'window':<14}{'accepted':>10}{'rejected':>10}{'clearing':>11}")
+    for window in windows:
+        price = f"{window.clearing_price:.2f}" if window.clearing_price is not None else "-"
+        print(
+            f"{window.delivery_date:%Y-%m-%d}  {window.start_local}-{window.end_local:<7}"
+            f"{window.accepted_mw:>9.1f}{window.rejected_mw:>10.1f}{price:>11}"
+        )
+
+    latest = windows[-1]
+    if latest.accepted_by_participant:
+        print(f"\nAccepted providers in the {latest.start_local}-{latest.end_local} window:")
+        for participant, mw in latest.accepted_by_participant.items():
+            print(f"  {mw:>7.2f} MW  {participant}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="neso-dfs",
@@ -186,6 +245,12 @@ def build_parser() -> argparse.ArgumentParser:
     events_parser.add_argument("--all", action="store_true", help="include events that have already finished")
     events_parser.add_argument("--json", action="store_true", help="output JSON")
     events_parser.set_defaults(func=command_events)
+
+    bids_parser = subparsers.add_parser("bids", help="show accepted and rejected bids for your zone")
+    _add_location_arguments(bids_parser)
+    bids_parser.add_argument("-z", "--zone", type=int, help="DFS zone number (1-12), instead of a location")
+    bids_parser.add_argument("--json", action="store_true", help="output JSON")
+    bids_parser.set_defaults(func=command_bids)
 
     return parser
 
