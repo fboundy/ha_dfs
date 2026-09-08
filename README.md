@@ -161,3 +161,10 @@ The tests are offline — no network access needed.
 `pytest-homeassistant-custom-component` pulls in `homeassistant`, which imports `fcntl` and so
 cannot load on Windows. `pyproject.toml` disables that plugin with `-p no:homeassistant`; drop the
 flag if you add tests exercising the Home Assistant layer, and run those under Linux or WSL.
+
+## Support
+
+[![ko-fi](https://img.shields.io/badge/Ko--fi-Support-FF5E5B?logo=ko-fi&logoColor=white)](https://ko-fi.com/fboundy)
+
+If you would like to support this work financially, the Ko-fi link supports
+[Penrith Mountain Rescue Team](https://penrithmrt.org.uk).
