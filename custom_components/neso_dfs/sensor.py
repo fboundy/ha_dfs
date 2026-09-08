@@ -65,6 +65,7 @@ def _event_profile(windows) -> dict:
                 "start_local": w.start_local,
                 "end_local": w.end_local,
                 "accepted_mw": w.accepted_mw,
+                "rejected_mw": w.rejected_mw,
                 "clearing_price": w.clearing_price,
             }
             for w in windows
@@ -336,7 +337,9 @@ class DfsParticipantAcceptRateSensor(DfsEntity, SensorEntity):
             ATTR_ZONE: self.zone,
             "participant": history.participant,
             "total_bids": history.total_bids,
-            "accepted_bids": history.accepted_bids,
+            # Counts, not the bid rows of the same name on the accepted volume sensor.
+            "accepted_bid_count": history.accepted_bids,
+            "rejected_bid_count": history.rejected_bids,
             "accepted_mw": history.accepted_mw,
             "average_accepted_price": history.average_accepted_price,
             "history_since": history.since.isoformat(),

@@ -178,6 +178,10 @@ class ParticipantHistory:
     since: date
 
     @property
+    def rejected_bids(self) -> int:
+        return self.total_bids - self.accepted_bids
+
+    @property
     def accept_rate(self) -> float | None:
         """Percentage of this participant's bids that were accepted."""
         if not self.total_bids:
