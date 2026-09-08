@@ -8,11 +8,11 @@
           "postcode": "Postcode"
         }
       },
-      "bidder": {
-        "title": "Track a bidder (optional)",
+      "participant": {
+        "title": "Track a participant (optional)",
         "description": "Pick a registered DFS participant bidding in zone Z{zone} to follow, or leave it as None. Confirmed results are reported separately from the historical accept rate, which only applies while an auction is unsettled. You can change this later.",
         "data": {
-          "participant": "Bidder to report on"
+          "participant": "Participant to report on"
         }
       }
     },
@@ -29,7 +29,7 @@
       "init": {
         "data": {
           "live_only": "Ignore test events",
-          "participant": "Bidder to report on"
+          "participant": "Participant to report on"
         },
         "description": "Pick a registered DFS participant to track. Confirmed results are reported separately from the historical accept rate, which only applies while an auction is unsettled."
       }
@@ -44,7 +44,7 @@
         "name": "DFS event today"
       },
       "participant_accepted": {
-        "name": "Bidder accepted"
+        "name": "Participant accepted"
       }
     },
     "sensor": {
@@ -70,7 +70,7 @@
         "name": "DFS clearing price"
       },
       "participant_status": {
-        "name": "Bidder status",
+        "name": "Participant status",
         "state": {
           "accepted": "Accepted",
           "rejected": "Rejected",
@@ -79,13 +79,13 @@
         }
       },
       "participant_accepted_volume": {
-        "name": "Bidder accepted volume"
+        "name": "Participant accepted volume"
       },
       "participant_accept_rate": {
-        "name": "Bidder accept rate"
+        "name": "Participant accept rate"
       },
-      "bidder": {
-        "name": "Bidder"
+      "participant": {
+        "name": "Participant"
       }
     }
   }

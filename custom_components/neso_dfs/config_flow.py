@@ -23,7 +23,7 @@ STEP_USER_SCHEMA = vol.Schema({vol.Optional(CONF_POSTCODE, default=""): str})
 
 
 class DfsConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Resolve the zone, then offer a bidder to follow."""
+    """Resolve the zone, then offer a participant to follow."""
 
     VERSION = 1
 
@@ -50,11 +50,11 @@ class DfsConfigFlow(ConfigFlow, domain=DOMAIN):
                     self._abort_if_unique_id_configured()
                     self._zone = zone.number
                     self._postcode = location.postcode
-                    return await self.async_step_bidder()
+                    return await self.async_step_participant()
 
         return self.async_show_form(step_id="user", data_schema=STEP_USER_SCHEMA, errors=errors)
 
-    async def async_step_bidder(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+    async def async_step_participant(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Offer the participants that actually bid into this zone. Skippable."""
         if user_input is not None:
             participant = (user_input.get(CONF_PARTICIPANT) or "").strip()
@@ -72,7 +72,7 @@ class DfsConfigFlow(ConfigFlow, domain=DOMAIN):
             }
         )
         return self.async_show_form(
-            step_id="bidder",
+            step_id="participant",
             data_schema=schema,
             description_placeholders={"zone": str(self._zone)},
         )
@@ -84,7 +84,7 @@ class DfsConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class DfsOptionsFlow(OptionsFlow):
-    """Lets the user hide test events and follow one bidder's results."""
+    """Lets the user hide test events and follow one participant's results."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:

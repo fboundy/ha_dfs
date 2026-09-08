@@ -106,21 +106,24 @@ your home.
 | `sensor.dfs_accepted_volume` | MW accepted in your zone for the current or next window |
 | `sensor.dfs_clearing_price` | Highest accepted price, £/MWh |
 
-### Tracking a bidder
+Entity IDs above are shortened for readability — Home Assistant prefixes them with the device name,
+so `sensor.dfs_zone` is really `sensor.neso_dfs_zone_6_dfs_zone` for a zone 6 setup.
 
-The options flow lets you pick a registered DFS participant — your own aggregator, for instance —
-and adds three more entities. **Confirmed results and historical likelihood are kept separate**, so
-a bid that has not settled yet never reads as a rejection:
+### Tracking a participant
+
+Setup and the options flow both let you pick a registered DFS participant — your own aggregator,
+for instance — which adds five more entities. **Confirmed results and historical likelihood are
+kept separate**, so a bid that has not settled yet never reads as a rejection:
 
 | Entity | Description |
 | --- | --- |
-| `sensor.dfs_bidder` | The participant being tracked |
-| `binary_sensor.dfs_bidder_accepted` | Confirmed accepted for the current/next event. `unknown` until the auction settles |
-| `sensor.dfs_bidder_status` | `accepted`, `rejected`, `no_bid`, or `pending` while unsettled |
-| `sensor.dfs_bidder_accepted_volume` | Confirmed MW accepted |
-| `sensor.dfs_bidder_accept_rate` | Share of this bidder's past bids accepted in your zone — the prior, only meaningful while a bid is `pending` |
+| `sensor.dfs_participant` | The participant being tracked |
+| `binary_sensor.dfs_participant_accepted` | Confirmed accepted for the current/next event. `unknown` until the auction settles |
+| `sensor.dfs_participant_status` | `accepted`, `rejected`, `no_bid`, or `pending` while unsettled |
+| `sensor.dfs_participant_accepted_volume` | Confirmed MW accepted |
+| `sensor.dfs_participant_accept_rate` | Share of this participant's past bids accepted in your zone — the prior, only meaningful while a bid is `pending` |
 
-Use `dfs_bidder_status` to drive automations: act on `accepted`, and treat `pending` as "not known
+Use `dfs_participant_status` to drive automations: act on `accepted`, and treat `pending` as "not known
 yet" rather than a no.
 
 ## Python API

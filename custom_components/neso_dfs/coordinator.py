@@ -100,7 +100,7 @@ class DfsCoordinator(DataUpdateCoordinator[DfsData]):
 
     @property
     def tracked_event(self) -> DfsEvent | None:
-        """The event the bidder entities describe: the live one, else the next."""
+        """The event the participant entities describe: the live one, else the next."""
         return self.active_event or self.next_event
 
     @property
@@ -117,7 +117,7 @@ class DfsCoordinator(DataUpdateCoordinator[DfsData]):
 
     @property
     def participant_status(self) -> str | None:
-        """Confirmed outcome for the tracked bidder, or PENDING while the auction is unsettled.
+        """Confirmed outcome for the tracked participant, or PENDING while the auction is unsettled.
 
         Kept separate from the historical accept rate: this is fact, that is a prior.
         """
@@ -134,7 +134,7 @@ class DfsCoordinator(DataUpdateCoordinator[DfsData]):
 
     @property
     def participant_accepted_mw(self) -> float | None:
-        """Confirmed accepted volume for the tracked bidder, peak across the event's windows."""
+        """Confirmed accepted volume for the tracked participant, peak across the event's windows."""
         if not self.participant or not self.results_published:
             return None
         volumes = [window.participant_accepted_mw(self.participant) for window in self.tracked_event_windows]

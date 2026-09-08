@@ -33,7 +33,7 @@ async def async_setup_entry(
     if coordinator.participant:
         async_add_entities(
             [
-                DfsBidderSensor(coordinator),
+                DfsParticipantSensor(coordinator),
                 DfsParticipantStatusSensor(coordinator),
                 DfsParticipantAcceptedVolumeSensor(coordinator),
                 DfsParticipantAcceptRateSensor(coordinator),
@@ -182,14 +182,14 @@ class DfsClearingPriceSensor(DfsEntity, SensorEntity):
         return _bid_window_attributes(self.coordinator.bid_window, self.zone)
 
 
-class DfsBidderSensor(DfsEntity, SensorEntity):
-    """Names the registered DFS participant the bidder entities are reporting on."""
+class DfsParticipantSensor(DfsEntity, SensorEntity):
+    """Names the registered DFS participant the other entities here report on."""
 
-    _attr_translation_key = "bidder"
+    _attr_translation_key = "participant"
     _attr_icon = "mdi:account-hard-hat"
 
     def __init__(self, coordinator) -> None:
-        super().__init__(coordinator, "bidder")
+        super().__init__(coordinator, "participant")
 
     @property
     def native_value(self) -> str | None:
@@ -201,7 +201,7 @@ class DfsBidderSensor(DfsEntity, SensorEntity):
 
 
 class DfsParticipantStatusSensor(DfsEntity, SensorEntity):
-    """Confirmed auction outcome for the tracked bidder on the current or next event.
+    """Confirmed auction outcome for the tracked participant on the current or next event.
 
     ``pending`` means the auction has not settled yet - use the accept rate sensor for
     the historical likelihood until this resolves.
@@ -232,7 +232,7 @@ class DfsParticipantStatusSensor(DfsEntity, SensorEntity):
 
 
 class DfsParticipantAcceptedVolumeSensor(DfsEntity, SensorEntity):
-    """Volume the tracked bidder has confirmed accepted for the current or next event."""
+    """Volume the tracked participant has confirmed accepted for the current or next event."""
 
     _attr_translation_key = "participant_accepted_volume"
     _attr_device_class = SensorDeviceClass.POWER
@@ -256,7 +256,7 @@ class DfsParticipantAcceptedVolumeSensor(DfsEntity, SensorEntity):
 
 
 class DfsParticipantAcceptRateSensor(DfsEntity, SensorEntity):
-    """How often the tracked bidder has been accepted in this zone historically.
+    """How often the tracked participant has been accepted in this zone historically.
 
     This is the prior for bids that have not settled; it says nothing about a
     result that is already confirmed.

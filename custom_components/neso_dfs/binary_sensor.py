@@ -25,7 +25,7 @@ async def async_setup_entry(
 
 
 class DfsParticipantAcceptedBinarySensor(DfsEntity, BinarySensorEntity):
-    """On only when the tracked bidder is confirmed accepted for the current or next event.
+    """On only when the tracked participant is confirmed accepted for the current or next event.
 
     Unknown while the auction is unsettled, so a pending bid never reads as a rejection.
     """
