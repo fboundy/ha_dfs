@@ -65,6 +65,26 @@ Downwards), live or test, the bid deadline, your zone's MW cap and which zones a
 An event publishes a per-zone MW cap. **A cap of `0`, or a zone missing from the list, means that
 zone is not being procured** — the event is running, but not where you are.
 
+### Events are hours long, but auctioned by the half hour
+
+An event might run 17:00–22:00, but NESO auctions each **30-minute slot separately**, and both the
+volume and the clearing price move from slot to slot. The accepted volume and clearing price
+sensors therefore hold the value for the current (or next) slot — which is what an automation
+acting *now* wants — while the shape of the whole event sits in their attributes:
+
+| Attribute | Meaning |
+| --- | --- |
+| `event_windows` | Every slot, with its accepted MW and clearing price |
+| `event_window_count` | Number of slots, e.g. 10 for a five-hour event |
+| `event_start_local` / `event_end_local` | Extent of the whole event |
+| `event_peak_mw` | Largest accepted volume in any slot |
+| `event_accepted_mwh` | Total energy across the event |
+| `event_min_price` / `event_max_price` | Clearing price range |
+
+The difference is not small. On 8 September zone 6 opened at 1.8 MW and £175/MWh, but peaked at
+17.4 MW and £203/MWh two hours in — so the state alone understates the event nearly tenfold. Use
+`event_windows` to find the slot worth acting on, and the state to act in it.
+
 The accepted volume sensor carries the full auction result for the window in `accepted_bids` and
 `rejected_bids`, each a list of `{participant, unit_id, mw, price}` ordered by price. NESO publishes
 one bid per participant per zone, so this is a handful of rows, not thousands. Reading the two lists

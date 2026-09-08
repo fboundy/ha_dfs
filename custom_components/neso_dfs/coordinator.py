@@ -99,6 +99,25 @@ class DfsCoordinator(DataUpdateCoordinator[DfsData]):
         return current_or_next_window(self.data.bid_windows) if self.data else None
 
     @property
+    def bid_window_profile(self) -> list[BidWindow]:
+        """Every published half-hour window of the event the current bid window belongs to.
+
+        Events run for hours but are auctioned per half-hour slot, and both volume and
+        clearing price move between slots, so the whole shape is worth carrying.
+        """
+        window = self.bid_window
+        if window is None or not self.data:
+            return []
+        return sorted(
+            (
+                other
+                for other in self.data.bid_windows
+                if other.event_id == window.event_id and other.delivery_date == window.delivery_date
+            ),
+            key=lambda other: other.start,
+        )
+
+    @property
     def tracked_event(self) -> DfsEvent | None:
         """The event the participant entities describe: the live one, else the next."""
         return self.active_event or self.next_event

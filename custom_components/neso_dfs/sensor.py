@@ -54,6 +54,31 @@ def _bid_rows(bids) -> list[dict]:
     ]
 
 
+def _event_profile(windows) -> dict:
+    """Per-slot shape of the whole event, since the state only covers one half hour."""
+    if not windows:
+        return {}
+    prices = [w.clearing_price for w in windows if w.clearing_price is not None]
+    return {
+        "event_windows": [
+            {
+                "start_local": w.start_local,
+                "end_local": w.end_local,
+                "accepted_mw": w.accepted_mw,
+                "clearing_price": w.clearing_price,
+            }
+            for w in windows
+        ],
+        "event_window_count": len(windows),
+        "event_start_local": windows[0].start_local,
+        "event_end_local": windows[-1].end_local,
+        "event_peak_mw": max(w.accepted_mw for w in windows),
+        "event_accepted_mwh": round(sum(w.accepted_mw for w in windows) / 2, 3),
+        "event_min_price": min(prices) if prices else None,
+        "event_max_price": max(prices) if prices else None,
+    }
+
+
 def _bid_window_attributes(window, zone: int) -> dict:
     if window is None:
         return {ATTR_ZONE: zone}
@@ -175,6 +200,7 @@ class DfsAcceptedVolumeSensor(DfsEntity, SensorEntity):
         if window is not None:
             attributes["accepted_bids"] = _bid_rows(window.accepted_bids)
             attributes["rejected_bids"] = _bid_rows(window.rejected_bids)
+        attributes.update(_event_profile(self.coordinator.bid_window_profile))
         return attributes
 
 
@@ -197,7 +223,14 @@ class DfsClearingPriceSensor(DfsEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> dict:
-        return _bid_window_attributes(self.coordinator.bid_window, self.zone)
+        attributes = _bid_window_attributes(self.coordinator.bid_window, self.zone)
+        profile = _event_profile(self.coordinator.bid_window_profile)
+        # Price range across the event, without repeating the full per-slot payload.
+        for key in ("event_window_count", "event_start_local", "event_end_local",
+                    "event_min_price", "event_max_price"):
+            if key in profile:
+                attributes[key] = profile[key]
+        return attributes
 
 
 class DfsParticipantSensor(DfsEntity, SensorEntity):
