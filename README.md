@@ -118,15 +118,21 @@ diverge, so anything coarser would be wrong: for event 116 on 9 September, Axle 
 Z10 but had not bid at all in Z6, while in that same zone Infinis cleared 26.3 MW and Octopus was
 rejected.
 
-### The event calendar
+### Calendars
 
-Each zone also gets a **calendar entity**, one entry per DFS event, with the auction result broken
-down by slot in the entry description.
+Each zone gets **two calendar entities**, because the useful grain differs by task:
 
-This exists because events run for a varying number of half-hour slots — 12 on 7 September, 10 on
+| Calendar | One entry per | Answers |
+| --- | --- | --- |
+| **DFS events** | event | when am I being asked to shift load |
+| **DFS slots** | half-hour slot | what is each half hour actually worth |
+
+Calendars exist here because events run for a varying number of slots — 12 on 7 September, 10 on
 the 8th and 9th — so no fixed set of entities can represent the schedule. A calendar holds as many
-entries as there are, gives you a timeline in the UI, and lets automations use calendar triggers
+entries as there are, gives a timeline in the UI, and lets automations use calendar triggers
 instead of polling a timestamp sensor.
+
+The event entry carries the whole auction in its description:
 
 ```
 DFS Downwards — Z6          17:00–22:00
@@ -137,11 +143,22 @@ DFS Downwards — Z6          17:00–22:00
   Auction result by slot (10 slots):
     17:00-17:30   1.8 MW  £175/MWh
     18:00-18:30  17.4 MW  £185/MWh
-    18:30-19:00  15.4 MW  £203/MWh
 ```
 
-The calendar keeps 14 days of events and 7 days of auction results, so recent history is browsable
-without re-fetching the whole season on every poll.
+Slot entries are priced in the summary, so the timeline itself shows where the money is, with the
+full merit order in the description:
+
+```
+18:30–19:00   22.4 MW · £235/MWh
+  Accepted 22.4 MW, rejected 2.7 MW
+    ✓ £202/MWh  16.6 MW  INFINIS LIMITED
+    ✓ £235/MWh   1.2 MW  EQUIWATT LIMITED
+    ✗ £319.3/MWh 2.7 MW  AXLE ENERGY LIMITED
+```
+
+Both keep 14 days of events and 7 days of auction results, so recent history is browsable without
+re-fetching the whole season on every poll. Slots older than the bid window still appear, showing
+the volume sought rather than a price.
 
 ### Multiple zones
 

@@ -91,6 +91,9 @@
     "calendar": {
       "events": {
         "name": "DFS events"
+      },
+      "slots": {
+        "name": "DFS slots"
       }
     }
   }
