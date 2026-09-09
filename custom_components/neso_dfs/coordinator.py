@@ -4,15 +4,17 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
+    BID_HISTORY_DAYS,
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    EVENT_HISTORY_DAYS,
     STATUS_ACCEPTED,
     STATUS_NO_BID,
     STATUS_PENDING,
@@ -68,10 +70,18 @@ class DfsCoordinator(DataUpdateCoordinator[DfsData]):
             raise UpdateFailed(f"Could not fetch DFS data: {err}") from err
 
     def _fetch(self) -> DfsData:
-        events = fetch_events(zone=self.zone, include_test=not self.live_only, upcoming_only=True)
+        # Finished events are kept so the calendar can show recent history, but both queries
+        # stay bounded rather than pulling the whole season every poll.
+        since = (datetime.now(timezone.utc) - timedelta(days=EVENT_HISTORY_DAYS)).date()
+        events = fetch_events(
+            zone=self.zone,
+            include_test=not self.live_only,
+            upcoming_only=False,
+            since=since,
+        )
         return DfsData(
             events=events,
-            bid_windows=fetch_bid_windows(self.zone),
+            bid_windows=fetch_bid_windows(self.zone, days_back=BID_HISTORY_DAYS),
             participant_history={
                 name: fetch_participant_history(self.zone, name) for name in self.participants
             },
@@ -81,8 +91,27 @@ class DfsCoordinator(DataUpdateCoordinator[DfsData]):
         return self.data.participant_history.get(participant) if self.data else None
 
     @property
-    def events(self) -> list[DfsEvent]:
+    def all_events(self) -> list[DfsEvent]:
+        """Every event fetched, including any that have already finished."""
         return self.data.events if self.data else []
+
+    @property
+    def events(self) -> list[DfsEvent]:
+        """Events that have not finished yet."""
+        now = datetime.now(timezone.utc)
+        return [event for event in self.all_events if event.end > now]
+
+    def bid_windows_for_event(self, event: DfsEvent) -> list[BidWindow]:
+        if not self.data:
+            return []
+        return sorted(
+            (
+                window
+                for window in self.data.bid_windows
+                if window.event_id == event.event_id and window.delivery_date == event.delivery_date
+            ),
+            key=lambda window: window.start,
+        )
 
     @property
     def active_event(self) -> DfsEvent | None:

@@ -118,6 +118,31 @@ diverge, so anything coarser would be wrong: for event 116 on 9 September, Axle 
 Z10 but had not bid at all in Z6, while in that same zone Infinis cleared 26.3 MW and Octopus was
 rejected.
 
+### The event calendar
+
+Each zone also gets a **calendar entity**, one entry per DFS event, with the auction result broken
+down by slot in the entry description.
+
+This exists because events run for a varying number of half-hour slots — 12 on 7 September, 10 on
+the 8th and 9th — so no fixed set of entities can represent the schedule. A calendar holds as many
+entries as there are, gives you a timeline in the UI, and lets automations use calendar triggers
+instead of polling a timestamp sensor.
+
+```
+DFS Downwards — Z6          17:00–22:00
+  Event 115 · Live · Energy
+  Requirement 500 MW · Zone 6 cap 500 MW
+  Bids close 08/09/2026 12:00
+
+  Auction result by slot (10 slots):
+    17:00-17:30   1.8 MW  £175/MWh
+    18:00-18:30  17.4 MW  £185/MWh
+    18:30-19:00  15.4 MW  £203/MWh
+```
+
+The calendar keeps 14 days of events and 7 days of auction results, so recent history is browsable
+without re-fetching the whole season on every poll.
+
 ### Multiple zones
 
 Each config entry covers one zone, so add the integration once per zone you care about — leave the

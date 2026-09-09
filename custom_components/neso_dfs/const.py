@@ -11,6 +11,11 @@ CONF_PARTICIPANT = "participant"
 
 DEFAULT_SCAN_INTERVAL = timedelta(minutes=15)
 
+# How far back to fetch so the calendar can show recent events, without pulling the
+# whole season on every poll.
+EVENT_HISTORY_DAYS = 14
+BID_HISTORY_DAYS = 7
+
 ATTR_EVENT_ID = "event_id"
 ATTR_EVENT_TYPE = "event_type"
 ATTR_EVENT_TAG = "event_tag"

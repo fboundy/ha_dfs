@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from .const import CONF_LIVE_ONLY, CONF_PARTICIPANT, CONF_ZONE, as_participant_list
 from .coordinator import DfsCoordinator
 
-PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
+PLATFORMS = [Platform.BINARY_SENSOR, Platform.CALENDAR, Platform.SENSOR]
 
 type DfsConfigEntry = ConfigEntry[DfsCoordinator]
 

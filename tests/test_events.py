@@ -94,6 +94,30 @@ def test_group_windows_merges_by_event():
     assert first.zones_in_scope == [4, 5, 6]
 
 
+@pytest.mark.parametrize("slots", [1, 10, 12])
+def test_event_spans_all_its_slots(slots):
+    """The calendar draws one entry per event, so start/end must span every slot."""
+    windows = []
+    for i in range(slots):
+        start_hour, start_min = divmod(17 * 60 + 30 * i, 60)
+        end_hour, end_min = divmod(17 * 60 + 30 * (i + 1), 60)
+        windows.append(
+            parse_service_window(
+                record(
+                    From_Local=f"{start_hour:02d}:{start_min:02d}",
+                    To_Local=f"{end_hour:02d}:{end_min:02d}",
+                    From_UTC=f"{start_hour - 1:02d}:{start_min:02d}",
+                    To_UTC=f"{end_hour - 1:02d}:{end_min:02d}",
+                )
+            )
+        )
+    event = group_windows(windows)[0]
+    assert len(event.windows) == slots
+    assert event.start == min(w.start for w in windows)
+    assert event.end == max(w.end for w in windows)
+    assert (event.end - event.start).total_seconds() == slots * 1800
+
+
 def test_is_upcoming():
     event = group_windows([parse_service_window(record())])[0]
     assert event.is_upcoming(datetime(2026, 9, 8, 15, 0, tzinfo=timezone.utc))

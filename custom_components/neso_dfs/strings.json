@@ -87,6 +87,11 @@
       "tracked_participants": {
         "name": "Tracked participants"
       }
+    },
+    "calendar": {
+      "events": {
+        "name": "DFS events"
+      }
     }
   }
 }
