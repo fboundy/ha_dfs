@@ -126,6 +126,7 @@ Each zone gets **two calendar entities**, because the useful grain differs by ta
 | --- | --- | --- |
 | **DFS events** | event | when am I being asked to shift load |
 | **DFS slots** | half-hour slot | what is each half hour actually worth |
+| ***{participant}* accepted slots** | winning block | when was *my* provider actually accepted |
 
 Calendars exist here because events run for a varying number of slots — 12 on 7 September, 10 on
 the 8th and 9th — so no fixed set of entities can represent the schedule. A calendar holds as many
@@ -156,9 +157,29 @@ full merit order in the description:
     ✗ £319.3/MWh 2.7 MW  AXLE ENERGY LIMITED
 ```
 
-Both keep 14 days of events and 7 days of auction results, so recent history is browsable without
-re-fetching the whole season on every poll. Slots older than the bid window still appear, showing
-the volume sought rather than a price.
+Each tracked participant also gets **its own calendar containing only the slots it won**, with
+contiguous slots merged into the delivery block you would actually act on:
+
+```
+AXLE ENERGY LIMITED · 0.4 MW        17:00–18:00
+  17:00-17:30  0.4 MW at £215.2/MWh (cleared £249.89)
+  17:30-18:00  0.4 MW at £215.2/MWh (cleared £256.11)
+```
+
+An empty participant calendar is meaningful, not broken: it means they won nothing. On 9 September
+Axle won 2 of 10 slots in Z10 and none at all in Z6, while Infinis took 9 of 10 slots in Z6 as a
+single 17:00–21:30 block.
+
+The shared slot calendar also marks your participants, so one timeline shows both the market and
+your position in it:
+
+```
+✓ INFINIS LIMITED · 25.8 MW · £220/MWh
+```
+
+All of them keep 14 days of events and 7 days of auction results, so recent history is browsable
+without re-fetching the whole season on every poll. Slots older than the bid window still appear,
+showing the volume sought rather than a price.
 
 ### Multiple zones
 

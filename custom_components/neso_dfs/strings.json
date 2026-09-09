@@ -94,6 +94,9 @@
       },
       "slots": {
         "name": "DFS slots"
+      },
+      "participant_slots": {
+        "name": "{participant} accepted slots"
       }
     }
   }

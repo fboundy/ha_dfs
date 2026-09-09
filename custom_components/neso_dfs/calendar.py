@@ -16,6 +16,7 @@ from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
+from homeassistant.util import slugify
 
 from . import DfsConfigEntry
 from .const import DOMAIN
@@ -29,7 +30,11 @@ async def async_setup_entry(
     hass: HomeAssistant, entry: DfsConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities([DfsEventCalendar(coordinator), DfsSlotCalendar(coordinator)])
+    entities: list[CalendarEntity] = [DfsEventCalendar(coordinator), DfsSlotCalendar(coordinator)]
+    entities += [
+        DfsParticipantCalendar(coordinator, participant) for participant in coordinator.participants
+    ]
+    async_add_entities(entities)
 
 
 class _DfsCalendarBase(DfsEntity, CalendarEntity):
@@ -133,6 +138,13 @@ class DfsSlotCalendar(_DfsCalendarBase):
         else:
             summary = f"DFS {event.event_type}"
 
+        # Lead with the tracked participants that won this slot, so the timeline itself
+        # shows where you were in the market rather than only what the market did.
+        if window is not None:
+            mine = [p for p in self.coordinator.participants if window.participant_accepted(p)]
+            if mine:
+                summary = f"✓ {', '.join(mine)} · {summary}"
+
         return CalendarEvent(
             summary=summary,
             start=slot.start,
@@ -150,9 +162,86 @@ class DfsSlotCalendar(_DfsCalendarBase):
             return "\n".join(lines)
 
         lines.append("")
+        for participant in self.coordinator.participants:
+            mw = window.participant_accepted_mw(participant)
+            price = window.participant_price(participant)
+            if mw:
+                lines.append(f"{participant}: accepted {mw:g} MW at £{price:g}/MWh")
+            elif price is not None:
+                margin = price - window.clearing_price if window.clearing_price else None
+                over = f", £{margin:g} above clearing" if margin else ""
+                lines.append(f"{participant}: rejected at £{price:g}/MWh{over}")
+            else:
+                lines.append(f"{participant}: no bid")
+        lines.append("")
         lines.append(f"Accepted {window.accepted_mw:g} MW, rejected {window.rejected_mw:g} MW")
         for bid in sorted(window.accepted_bids, key=lambda b: (b.price is None, b.price)):
             lines.append(f"  ✓ £{bid.price:g}/MWh  {bid.mw:g} MW  {bid.participant}")
         for bid in sorted(window.rejected_bids, key=lambda b: (b.price is None, b.price)):
             lines.append(f"  ✗ £{bid.price:g}/MWh  {bid.mw:g} MW  {bid.participant}")
         return "\n".join(lines)
+
+
+class DfsParticipantCalendar(_DfsCalendarBase):
+    """Only the slots one participant actually won, merged into delivery blocks.
+
+    Contiguous accepted slots become a single entry, since that is the block you would
+    act on rather than a run of separate half hours.
+    """
+
+    _attr_translation_key = "participant_slots"
+    _attr_icon = "mdi:calendar-check"
+
+    def __init__(self, coordinator: DfsCoordinator, participant: str) -> None:
+        super().__init__(coordinator, "participant_calendar", participant)
+
+    def _entries(self) -> list[CalendarEvent]:
+        entries = []
+        for event in self.coordinator.all_events:
+            won = [
+                window
+                for window in self.coordinator.bid_windows_for_event(event)
+                if window.participant_accepted(self.tracked_participant)
+            ]
+            for run in _contiguous(won):
+                entries.append(self._to_entry(event, run))
+        return entries
+
+    def _to_entry(self, event: DfsEvent, run: list[BidWindow]) -> CalendarEvent:
+        volumes = [w.participant_accepted_mw(self.tracked_participant) for w in run]
+        low, high = min(volumes), max(volumes)
+        volume = f"{low:g} MW" if low == high else f"{low:g}–{high:g} MW"
+
+        lines = [f"{self.tracked_participant} accepted in zone {self.zone}", ""]
+        for window in run:
+            mw = window.participant_accepted_mw(self.tracked_participant)
+            price = window.participant_price(self.tracked_participant)
+            clearing = window.clearing_price
+            lines.append(
+                f"  {window.start_local}-{window.end_local}  {mw:g} MW at £{price:g}/MWh"
+                + (f" (cleared £{clearing:g})" if clearing is not None else "")
+            )
+        lines.append("")
+        lines += self._event_header(event)
+
+        return CalendarEvent(
+            summary=f"{self.tracked_participant} · {volume}",
+            start=run[0].start,
+            end=run[-1].end,
+            description="\n".join(lines),
+            uid=(
+                f"{DOMAIN}-z{self.zone}-{slugify(self.tracked_participant)}"
+                f"-{event.event_id}-{run[0].start.isoformat()}"
+            ),
+        )
+
+
+def _contiguous(windows: list[BidWindow]) -> list[list[BidWindow]]:
+    """Group windows that run back to back into single blocks."""
+    runs: list[list[BidWindow]] = []
+    for window in sorted(windows, key=lambda w: w.start):
+        if runs and runs[-1][-1].end == window.start:
+            runs[-1].append(window)
+        else:
+            runs.append([window])
+    return runs
