@@ -15,7 +15,14 @@ from homeassistant.helpers.selector import (
     SelectSelectorMode,
 )
 
-from .const import CONF_LIVE_ONLY, CONF_PARTICIPANT, CONF_POSTCODE, CONF_ZONE, DOMAIN
+from .const import (
+    CONF_LIVE_ONLY,
+    CONF_PARTICIPANT,
+    CONF_POSTCODE,
+    CONF_ZONE,
+    DOMAIN,
+    as_participant_list,
+)
 from .vendor_lib import NesoError, find_zone
 from .vendor_lib.bids import fetch_participants
 
@@ -57,16 +64,16 @@ class DfsConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_participant(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Offer the participants that actually bid into this zone. Skippable."""
         if user_input is not None:
-            participant = (user_input.get(CONF_PARTICIPANT) or "").strip()
+            participants = user_input.get(CONF_PARTICIPANT) or []
             return self.async_create_entry(
                 title=f"DFS Zone {self._zone}",
                 data={CONF_ZONE: self._zone, CONF_POSTCODE: self._postcode},
-                options={CONF_PARTICIPANT: participant} if participant else {},
+                options={CONF_PARTICIPANT: participants} if participants else {},
             )
 
         schema = vol.Schema(
             {
-                vol.Optional(CONF_PARTICIPANT, default=""): await _participant_selector(
+                vol.Optional(CONF_PARTICIPANT, default=[]): await _participant_selector(
                     self.hass, self._zone
                 )
             }
@@ -90,7 +97,7 @@ class DfsOptionsFlow(OptionsFlow):
         if user_input is not None:
             return self.async_create_entry(data=user_input)
 
-        current = self.config_entry.options.get(CONF_PARTICIPANT, "")
+        current = as_participant_list(self.config_entry.options.get(CONF_PARTICIPANT))
         schema = vol.Schema(
             {
                 vol.Optional(
@@ -105,19 +112,23 @@ class DfsOptionsFlow(OptionsFlow):
         return self.async_show_form(step_id="init", data_schema=schema)
 
 
-async def _participant_selector(hass, zone: int, current: str = "") -> SelectSelector:
-    """Dropdown of participants that have bid into this zone, plus a 'None' entry."""
+async def _participant_selector(hass, zone: int, current: list[str] | None = None) -> SelectSelector:
+    """Multi-select of the participants that have bid into this zone."""
     try:
         participants = await hass.async_add_executor_job(fetch_participants, zone)
     except NesoError:
         participants = []
-    if current and current not in participants:
-        participants = sorted([*participants, current], key=str.casefold)
+    missing = [name for name in (current or []) if name not in participants]
+    if missing:
+        participants = sorted([*participants, *missing], key=str.casefold)
 
-    options = [SelectOptionDict(value="", label="None")]
-    options += [SelectOptionDict(value=name, label=name) for name in participants]
     return SelectSelector(
-        SelectSelectorConfig(options=options, mode=SelectSelectorMode.DROPDOWN, custom_value=True)
+        SelectSelectorConfig(
+            options=[SelectOptionDict(value=name, label=name) for name in participants],
+            mode=SelectSelectorMode.DROPDOWN,
+            multiple=True,
+            custom_value=True,
+        )
     )
 
 

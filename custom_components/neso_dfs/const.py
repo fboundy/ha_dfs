@@ -32,3 +32,12 @@ STATUS_REJECTED = "rejected"
 STATUS_NO_BID = "no_bid"
 STATUS_PENDING = "pending"
 PARTICIPANT_STATUSES = [STATUS_ACCEPTED, STATUS_REJECTED, STATUS_NO_BID, STATUS_PENDING]
+
+
+def as_participant_list(value) -> list[str]:
+    """Read the participant option, which older entries stored as a single string."""
+    if not value:
+        return []
+    if isinstance(value, str):
+        return [value]
+    return [name for name in value if name]

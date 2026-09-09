@@ -9,10 +9,10 @@
         }
       },
       "participant": {
-        "title": "Track a participant (optional)",
-        "description": "Pick a registered DFS participant bidding in zone Z{zone} to follow, or leave it as None. Confirmed results are reported separately from the historical accept rate, which only applies while an auction is unsettled. You can change this later.",
+        "title": "Track participants (optional)",
+        "description": "Pick any registered DFS participants bidding in zone Z{zone} to follow, or leave it empty. Each one gets its own entities, scoped to this zone. Confirmed results are reported separately from the historical accept rate, which only applies while an auction is unsettled. You can change this later.",
         "data": {
-          "participant": "Participant to report on"
+          "participant": "Participants to report on"
         }
       }
     },
@@ -29,9 +29,9 @@
       "init": {
         "data": {
           "live_only": "Ignore test events",
-          "participant": "Participant to report on"
+          "participant": "Participants to report on"
         },
-        "description": "Pick a registered DFS participant to track. Confirmed results are reported separately from the historical accept rate, which only applies while an auction is unsettled."
+        "description": "Pick any registered DFS participants to track in this zone. Each one gets its own set of entities. Confirmed results are reported separately from the historical accept rate, which only applies while an auction is unsettled."
       }
     }
   },
@@ -44,7 +44,7 @@
         "name": "DFS event today"
       },
       "participant_accepted": {
-        "name": "Participant accepted"
+        "name": "{participant} accepted"
       }
     },
     "sensor": {
@@ -70,7 +70,7 @@
         "name": "DFS clearing price"
       },
       "participant_status": {
-        "name": "Participant status",
+        "name": "{participant} status",
         "state": {
           "accepted": "Accepted",
           "rejected": "Rejected",
@@ -79,13 +79,13 @@
         }
       },
       "participant_accepted_volume": {
-        "name": "Participant accepted volume"
+        "name": "{participant} accepted volume"
       },
       "participant_accept_rate": {
-        "name": "Participant accept rate"
+        "name": "{participant} accept rate"
       },
-      "participant": {
-        "name": "Participant"
+      "tracked_participants": {
+        "name": "Tracked participants"
       }
     }
   }

@@ -99,18 +99,30 @@ rejected_bids:
   - {participant: AXLE ENERGY LIMITED,    unit_id: AXLE-01-Z6, mw: 2.7, price: 319.3}
 ```
 
-### Tracking a participant
+### Tracking participants
 
-Setting a participant adds five more entities. **Confirmed results and historical likelihood are
+Pick **any number** of registered DFS participants — your own aggregator, its competitors — and each
+gets its own set of entities, named after it. **Confirmed results and historical likelihood are
 kept deliberately separate**, so a bid that has not settled yet never reads as a rejection:
 
 | Name | Description |
 | --- | --- |
-| Participant | The participant being tracked |
-| Participant accepted | Confirmed accepted for the current or next event. `unknown` until the auction settles |
-| Participant status | `accepted`, `rejected`, `no_bid`, or `pending` while unsettled |
-| Participant accepted volume | Confirmed MW accepted |
-| Participant accept rate | Share of this participant's past bids accepted in your zone |
+| Tracked participants | How many are followed in this zone, listed in its attributes |
+| *{participant}* accepted | Confirmed accepted for the current or next event. `unknown` until the auction settles |
+| *{participant}* status | `accepted`, `rejected`, `no_bid`, or `pending` while unsettled |
+| *{participant}* accepted volume | Confirmed MW accepted |
+| *{participant}* accept rate | Share of this participant's past bids accepted in this zone |
+
+**Every one of these is scoped to a single participant in a single zone.** Outcomes genuinely
+diverge, so anything coarser would be wrong: for event 116 on 9 September, Axle was `accepted` in
+Z10 but had not bid at all in Z6, while in that same zone Infinis cleared 26.3 MW and Octopus was
+rejected.
+
+### Multiple zones
+
+Each config entry covers one zone, so add the integration once per zone you care about — leave the
+postcode blank for your own, and give a postcode in the other zone for the rest. Every entry gets
+its own device, entities and participant selection.
 
 Accept rate is a **prior, not a prediction** — it only tells you anything while a bid is still
 `pending`. Once the auction settles, the status sensor is fact and the rate is irrelevant to that

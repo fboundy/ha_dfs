@@ -36,7 +36,7 @@ class DfsData:
 
     events: list[DfsEvent] = field(default_factory=list)
     bid_windows: list[BidWindow] = field(default_factory=list)
-    participant_history: ParticipantHistory | None = None
+    participant_history: dict[str, ParticipantHistory] = field(default_factory=dict)
 
 
 class DfsCoordinator(DataUpdateCoordinator[DfsData]):
@@ -48,7 +48,7 @@ class DfsCoordinator(DataUpdateCoordinator[DfsData]):
         entry: ConfigEntry,
         zone: int,
         live_only: bool,
-        participant: str | None = None,
+        participants: list[str] | None = None,
     ) -> None:
         super().__init__(
             hass,
@@ -59,7 +59,7 @@ class DfsCoordinator(DataUpdateCoordinator[DfsData]):
         )
         self.zone = zone
         self.live_only = live_only
-        self.participant = participant or None
+        self.participants = list(participants or [])
 
     async def _async_update_data(self) -> DfsData:
         try:
@@ -69,12 +69,16 @@ class DfsCoordinator(DataUpdateCoordinator[DfsData]):
 
     def _fetch(self) -> DfsData:
         events = fetch_events(zone=self.zone, include_test=not self.live_only, upcoming_only=True)
-        history = fetch_participant_history(self.zone, self.participant) if self.participant else None
         return DfsData(
             events=events,
             bid_windows=fetch_bid_windows(self.zone),
-            participant_history=history,
+            participant_history={
+                name: fetch_participant_history(self.zone, name) for name in self.participants
+            },
         )
+
+    def history_for(self, participant: str) -> ParticipantHistory | None:
+        return self.data.participant_history.get(participant) if self.data else None
 
     @property
     def events(self) -> list[DfsEvent]:
@@ -134,27 +138,26 @@ class DfsCoordinator(DataUpdateCoordinator[DfsData]):
     def results_published(self) -> bool:
         return bool(self.tracked_event_windows)
 
-    @property
-    def participant_status(self) -> str | None:
-        """Confirmed outcome for the tracked participant, or PENDING while the auction is unsettled.
+    def participant_status(self, participant: str) -> str | None:
+        """Confirmed outcome for one participant, or PENDING while the auction is unsettled.
 
         Kept separate from the historical accept rate: this is fact, that is a prior.
+        Scoped to this coordinator's zone, so it never reports another zone's result.
         """
-        if not self.participant or self.tracked_event is None:
+        if self.tracked_event is None:
             return None
         windows = self.tracked_event_windows
         if not windows:
             return STATUS_PENDING
-        if any(window.participant_accepted(self.participant) for window in windows):
+        if any(window.participant_accepted(participant) for window in windows):
             return STATUS_ACCEPTED
-        if any(window.participant_bids(self.participant) for window in windows):
+        if any(window.participant_bids(participant) for window in windows):
             return STATUS_REJECTED
         return STATUS_NO_BID
 
-    @property
-    def participant_accepted_mw(self) -> float | None:
-        """Confirmed accepted volume for the tracked participant, peak across the event's windows."""
-        if not self.participant or not self.results_published:
+    def participant_accepted_mw(self, participant: str) -> float | None:
+        """Confirmed accepted volume for one participant, peak across the event's windows."""
+        if not self.results_published:
             return None
-        volumes = [window.participant_accepted_mw(self.participant) for window in self.tracked_event_windows]
+        volumes = [window.participant_accepted_mw(participant) for window in self.tracked_event_windows]
         return max(volumes) if volumes else 0.0

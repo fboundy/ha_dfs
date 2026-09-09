@@ -30,15 +30,16 @@ async def async_setup_entry(
         ]
     )
 
-    if coordinator.participant:
-        async_add_entities(
-            [
-                DfsParticipantSensor(coordinator),
-                DfsParticipantStatusSensor(coordinator),
-                DfsParticipantAcceptedVolumeSensor(coordinator),
-                DfsParticipantAcceptRateSensor(coordinator),
-            ]
-        )
+    if coordinator.participants:
+        async_add_entities([DfsTrackedParticipantsSensor(coordinator)])
+        for participant in coordinator.participants:
+            async_add_entities(
+                [
+                    DfsParticipantStatusSensor(coordinator, participant),
+                    DfsParticipantAcceptedVolumeSensor(coordinator, participant),
+                    DfsParticipantAcceptRateSensor(coordinator, participant),
+                ]
+            )
 
 
 def _bid_rows(bids) -> list[dict]:
@@ -234,22 +235,23 @@ class DfsClearingPriceSensor(DfsEntity, SensorEntity):
         return attributes
 
 
-class DfsParticipantSensor(DfsEntity, SensorEntity):
-    """Names the registered DFS participant the other entities here report on."""
+class DfsTrackedParticipantsSensor(DfsEntity, SensorEntity):
+    """How many registered DFS participants this zone is being tracked for."""
 
-    _attr_translation_key = "participant"
+    _attr_translation_key = "tracked_participants"
     _attr_icon = "mdi:account-hard-hat"
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, coordinator) -> None:
-        super().__init__(coordinator, "participant")
+        super().__init__(coordinator, "tracked_participants")
 
     @property
-    def native_value(self) -> str | None:
-        return self.coordinator.participant
+    def native_value(self) -> int:
+        return len(self.coordinator.participants)
 
     @property
     def extra_state_attributes(self) -> dict:
-        return {ATTR_ZONE: self.zone}
+        return {ATTR_ZONE: self.zone, "participants": list(self.coordinator.participants)}
 
 
 class DfsParticipantStatusSensor(DfsEntity, SensorEntity):
@@ -263,19 +265,19 @@ class DfsParticipantStatusSensor(DfsEntity, SensorEntity):
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = PARTICIPANT_STATUSES
 
-    def __init__(self, coordinator) -> None:
-        super().__init__(coordinator, "participant_status")
+    def __init__(self, coordinator, participant: str) -> None:
+        super().__init__(coordinator, "participant_status", participant)
 
     @property
     def native_value(self) -> str | None:
-        return self.coordinator.participant_status
+        return self.coordinator.participant_status(self.tracked_participant)
 
     @property
     def extra_state_attributes(self) -> dict:
         event = self.coordinator.tracked_event
         return {
             ATTR_ZONE: self.zone,
-            "participant": self.coordinator.participant,
+            "participant": self.tracked_participant,
             "results_published": self.coordinator.results_published,
             "event_id": event.event_id if event else None,
             "delivery_date": event.delivery_date.isoformat() if event else None,
@@ -291,18 +293,18 @@ class DfsParticipantAcceptedVolumeSensor(DfsEntity, SensorEntity):
     _attr_native_unit_of_measurement = UnitOfPower.MEGA_WATT
     _attr_state_class = SensorStateClass.MEASUREMENT
 
-    def __init__(self, coordinator) -> None:
-        super().__init__(coordinator, "participant_accepted_volume")
+    def __init__(self, coordinator, participant: str) -> None:
+        super().__init__(coordinator, "participant_accepted_volume", participant)
 
     @property
     def native_value(self) -> float | None:
-        return self.coordinator.participant_accepted_mw
+        return self.coordinator.participant_accepted_mw(self.tracked_participant)
 
     @property
     def extra_state_attributes(self) -> dict:
         return {
             ATTR_ZONE: self.zone,
-            "participant": self.coordinator.participant,
+            "participant": self.tracked_participant,
             "results_published": self.coordinator.results_published,
         }
 
@@ -320,19 +322,19 @@ class DfsParticipantAcceptRateSensor(DfsEntity, SensorEntity):
     _attr_icon = "mdi:chart-line"
     _attr_suggested_display_precision = 1
 
-    def __init__(self, coordinator) -> None:
-        super().__init__(coordinator, "participant_accept_rate")
+    def __init__(self, coordinator, participant: str) -> None:
+        super().__init__(coordinator, "participant_accept_rate", participant)
 
     @property
     def native_value(self) -> float | None:
-        history = self.coordinator.data.participant_history if self.coordinator.data else None
+        history = self.coordinator.history_for(self.tracked_participant)
         return history.accept_rate if history else None
 
     @property
     def extra_state_attributes(self) -> dict:
-        history = self.coordinator.data.participant_history if self.coordinator.data else None
+        history = self.coordinator.history_for(self.tracked_participant)
         if history is None:
-            return {ATTR_ZONE: self.zone, "participant": self.coordinator.participant}
+            return {ATTR_ZONE: self.zone, "participant": self.tracked_participant}
         return {
             ATTR_ZONE: self.zone,
             "participant": history.participant,

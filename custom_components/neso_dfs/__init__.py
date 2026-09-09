@@ -6,7 +6,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
-from .const import CONF_LIVE_ONLY, CONF_PARTICIPANT, CONF_ZONE
+from .const import CONF_LIVE_ONLY, CONF_PARTICIPANT, CONF_ZONE, as_participant_list
 from .coordinator import DfsCoordinator
 
 PLATFORMS = [Platform.BINARY_SENSOR, Platform.SENSOR]
@@ -20,7 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: DfsConfigEntry) -> bool:
         entry,
         zone=entry.data[CONF_ZONE],
         live_only=entry.options.get(CONF_LIVE_ONLY, False),
-        participant=entry.options.get(CONF_PARTICIPANT),
+        participants=as_participant_list(entry.options.get(CONF_PARTICIPANT)),
     )
     await coordinator.async_config_entry_first_refresh()
     entry.runtime_data = coordinator

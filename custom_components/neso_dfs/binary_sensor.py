@@ -20,36 +20,40 @@ async def async_setup_entry(
     coordinator = entry.runtime_data
     async_add_entities([DfsActiveBinarySensor(coordinator), DfsEventTodayBinarySensor(coordinator)])
 
-    if coordinator.participant:
-        async_add_entities([DfsParticipantAcceptedBinarySensor(coordinator)])
+    async_add_entities(
+        DfsParticipantAcceptedBinarySensor(coordinator, participant)
+        for participant in coordinator.participants
+    )
 
 
 class DfsParticipantAcceptedBinarySensor(DfsEntity, BinarySensorEntity):
-    """On only when the tracked participant is confirmed accepted for the current or next event.
+    """On only when this participant is confirmed accepted in this zone's current or next event.
 
-    Unknown while the auction is unsettled, so a pending bid never reads as a rejection.
+    Scoped to one participant and one zone, so it never reflects another participant's
+    result or another zone's auction. Unknown while the auction is unsettled, so a pending
+    bid never reads as a rejection.
     """
 
     _attr_translation_key = "participant_accepted"
     _attr_icon = "mdi:gavel"
 
-    def __init__(self, coordinator) -> None:
-        super().__init__(coordinator, "participant_accepted")
+    def __init__(self, coordinator, participant: str) -> None:
+        super().__init__(coordinator, "participant_accepted", participant)
 
     @property
     def is_on(self) -> bool | None:
         if not self.coordinator.results_published:
             return None
-        return self.coordinator.participant_status == STATUS_ACCEPTED
+        return self.coordinator.participant_status(self.tracked_participant) == STATUS_ACCEPTED
 
     @property
     def extra_state_attributes(self) -> dict:
         return {
             ATTR_ZONE: self.zone,
-            "participant": self.coordinator.participant,
-            "status": self.coordinator.participant_status,
+            "participant": self.tracked_participant,
+            "status": self.coordinator.participant_status(self.tracked_participant),
             "results_published": self.coordinator.results_published,
-            "accepted_mw": self.coordinator.participant_accepted_mw,
+            "accepted_mw": self.coordinator.participant_accepted_mw(self.tracked_participant),
         }
 
 
