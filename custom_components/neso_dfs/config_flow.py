@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from functools import partial
 from typing import Any
 
@@ -27,7 +28,12 @@ from .const import (
 from .vendor_lib import NesoError, find_zone
 from .vendor_lib.bids import fetch_participants
 
+_LOGGER = logging.getLogger(__name__)
+
 ZONE_NUMBERS = range(1, 13)
+# Cached under /config so the boundaries survive a restart; a container's home directory
+# does not, and re-downloading them during setup is what makes this step fail.
+CACHE_SUBDIR = ".neso_dfs"
 
 STEP_POSTCODE_SCHEMA = vol.Schema({vol.Required(CONF_POSTCODE): str})
 STEP_ZONE_SCHEMA = vol.Schema(
@@ -63,9 +69,11 @@ class DfsConfigFlow(ConfigFlow, domain=DOMAIN):
                     find_zone,
                     latitude=self.hass.config.latitude,
                     longitude=self.hass.config.longitude,
+                    cache=self.hass.config.path(CACHE_SUBDIR),
                 )
             )
-        except NesoError:
+        except NesoError as err:
+            _LOGGER.error("DFS zone lookup from the Home Assistant location failed: %s", err)
             self._errors = {"base": "cannot_connect"}
         else:
             if zone is None:
@@ -83,9 +91,10 @@ class DfsConfigFlow(ConfigFlow, domain=DOMAIN):
             postcode = (user_input.get(CONF_POSTCODE) or "").strip()
             try:
                 zone, location = await self.hass.async_add_executor_job(
-                    partial(find_zone, postcode=postcode)
+                    partial(find_zone, postcode=postcode, cache=self.hass.config.path(CACHE_SUBDIR))
                 )
             except NesoError as err:
+                _LOGGER.error("DFS zone lookup for postcode %s failed: %s", postcode, err)
                 errors = {"base": "not_found" if "not found" in str(err) else "cannot_connect"}
             else:
                 if zone is None:

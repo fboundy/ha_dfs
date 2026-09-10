@@ -40,7 +40,15 @@ class Zone:
         return f"Z{self.number}"
 
 
-def cache_dir() -> Path:
+def cache_dir(override: str | Path | None = None) -> Path:
+    """Where the zone boundaries are cached.
+
+    Callers can pass a directory explicitly; Home Assistant does, because a container's
+    home directory does not survive a restart and the boundaries would be re-downloaded
+    every time.
+    """
+    if override:
+        return Path(override)
     override = os.environ.get("NESO_DFS_CACHE")
     if override:
         return Path(override)
@@ -51,8 +59,8 @@ def cache_dir() -> Path:
     return Path(root) / "neso_dfs"
 
 
-def _cache_path() -> Path:
-    return cache_dir() / "dfs_12_zones.geojson"
+def _cache_path(override: str | Path | None = None) -> Path:
+    return cache_dir(override) / "dfs_12_zones.geojson"
 
 
 def _download_zones() -> dict[str, Any]:
@@ -69,9 +77,9 @@ def _download_zones() -> dict[str, Any]:
         raise NesoError("zone boundary download was not valid GeoJSON") from exc
 
 
-def load_zone_geojson(refresh: bool = False) -> dict[str, Any]:
+def load_zone_geojson(refresh: bool = False, cache: str | Path | None = None) -> dict[str, Any]:
     """Return the zone FeatureCollection, downloading it if the cache is stale."""
-    path = _cache_path()
+    path = _cache_path(cache)
     if not refresh and path.exists():
         age = time.time() - path.stat().st_mtime
         if age < CACHE_MAX_AGE_SECONDS:
@@ -148,8 +156,8 @@ class ZoneMap:
         self._zones.sort(key=lambda item: item[0])
 
     @classmethod
-    def load(cls, refresh: bool = False) -> "ZoneMap":
-        return cls(load_zone_geojson(refresh=refresh))
+    def load(cls, refresh: bool = False, cache: str | Path | None = None) -> "ZoneMap":
+        return cls(load_zone_geojson(refresh=refresh, cache=cache))
 
     @property
     def zone_numbers(self) -> list[int]:
@@ -189,8 +197,9 @@ def find_zone(
     latitude: float | None = None,
     longitude: float | None = None,
     refresh: bool = False,
+    cache: str | Path | None = None,
 ) -> tuple[Zone | None, Location]:
     """Look up the DFS zone for a postcode or coordinate pair."""
     location = resolve_location(postcode, latitude, longitude)
-    zone_map = ZoneMap.load(refresh=refresh)
+    zone_map = ZoneMap.load(refresh=refresh, cache=cache)
     return zone_map.zone_for_point(location.latitude, location.longitude), location
