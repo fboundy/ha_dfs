@@ -32,13 +32,16 @@ and restart. If you have SSH access to the host, `./scripts/deploy.sh user@host`
 ## Setup
 
 Go to **Settings → Devices & Services → Add Integration** and choose **NESO Demand Flexibility
-Service**.
+Service**. It asks how you want to pick the zone:
 
-- **Postcode** — leave blank to use the coordinates Home Assistant already holds for your home.
-  Enter one only if you want a different location.
-- **Participant** — optionally pick a registered DFS participant to follow, chosen from those that
-  actually bid into your zone. Skip it if you just want event data; you can set it later through
-  the **Configure** button.
+- **Use the Home Assistant location** — resolves the zone from the coordinates HA already holds.
+  One click, and the usual choice.
+- **Search by postcode** — for a different address, or if the HA location isn't set.
+- **Choose the zone directly** — if you already know your zone number, or want to watch a zone you
+  don't live in.
+
+A second step then offers the **participants** to follow, listed from those that actually bid into
+that zone. Pick any number, or none — you can change it later through the **Configure** button.
 
 Northern Ireland is not covered by DFS, so a location outside Great Britain is rejected with a
 clear error rather than guessing a zone.
@@ -180,6 +183,50 @@ your position in it:
 All of them keep 14 days of events and 7 days of auction results, so recent history is browsable
 without re-fetching the whole season on every poll. Slots older than the bid window still appear,
 showing the volume sought rather than a price.
+
+#### Showing them
+
+Calendars do not appear on your dashboard automatically — you have to choose where to show them.
+
+**The Calendar panel.** Open **Calendar** in the sidebar. Every calendar entity in your system is
+listed down the left; tick the DFS ones you want and untick the rest. This is the quickest way to
+see events, slots and participant blocks side by side on one timeline.
+
+If **Calendar** is missing from the sidebar, it is hidden rather than absent — click your user name
+at the bottom of the sidebar, scroll to the sidebar editor, and unhide it.
+
+**On a dashboard.** Edit the dashboard, **Add card → Calendar**, then add the entities you want:
+
+```yaml
+type: calendar
+initial_view: dayGridMonth      # or listWeek — better for a sidebar column
+entities:
+  - calendar.neso_dfs_zone_6_dfs_slots
+  - calendar.neso_dfs_zone_6_axle_energy_limited_accepted_slots
+```
+
+`listWeek` suits the slot calendar, since a month grid gets crowded with ten entries a day.
+
+**The entity names** follow `calendar.neso_dfs_zone_<n>_<what>`:
+
+| Entity | Contains |
+| --- | --- |
+| `calendar.neso_dfs_zone_6_dfs_events` | one entry per event |
+| `calendar.neso_dfs_zone_6_dfs_slots` | one entry per half hour |
+| `calendar.neso_dfs_zone_6_<participant>_accepted_slots` | only that participant's winning blocks |
+
+**In automations**, use a calendar trigger rather than polling a timestamp — you get offsets free:
+
+```yaml
+triggers:
+  - trigger: calendar
+    entity_id: calendar.neso_dfs_zone_6_axle_energy_limited_accepted_slots
+    event: start
+    offset: "-00:15:00"     # 15 minutes before a block you were accepted for
+```
+
+A calendar's own state is `on` while an entry is running and `off` otherwise, with the current or
+next entry in its attributes — so `binary_sensor`-style conditions work against it directly.
 
 ### Multiple zones
 

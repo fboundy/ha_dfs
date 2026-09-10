@@ -3,9 +3,25 @@
     "step": {
       "user": {
         "title": "NESO Demand Flexibility Service",
-        "description": "Enter a UK postcode to find your DFS zone. Leave it blank to use the Home Assistant location.",
+        "description": "How would you like to choose your DFS zone?",
+        "menu_options": {
+          "home": "Use the Home Assistant location",
+          "postcode": "Search by postcode",
+          "zone": "Choose the zone directly"
+        }
+      },
+      "postcode": {
+        "title": "Find your zone by postcode",
+        "description": "Enter a UK postcode. Great Britain only \u2014 DFS does not cover Northern Ireland.",
         "data": {
           "postcode": "Postcode"
+        }
+      },
+      "zone": {
+        "title": "Choose a zone",
+        "description": "Pick one of the 12 DFS zones. If you are not certain which covers you, go back and search by postcode instead.",
+        "data": {
+          "zone": "DFS zone"
         }
       },
       "participant": {
@@ -18,7 +34,8 @@
     },
     "error": {
       "cannot_connect": "Could not reach NESO or the postcode lookup service.",
-      "outside_gb": "That location is not inside any DFS zone. The service covers Great Britain only."
+      "outside_gb": "That location is not inside any DFS zone. The service covers Great Britain only.",
+      "not_found": "That postcode was not found. Check it and try again."
     },
     "abort": {
       "already_configured": "This DFS zone is already configured."
